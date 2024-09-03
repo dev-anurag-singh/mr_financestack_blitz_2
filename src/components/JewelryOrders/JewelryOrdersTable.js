@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-table";
 import { columnDef } from "./columns";
 import dataJSON from "./data.json";
+import { useSkipper } from "./useSkipper";
 
 
 const JewelryOrdersTable = () => {
@@ -31,7 +32,8 @@ const JewelryOrdersTable = () => {
   const [columnFilters, setColumnFilters] = React.useState([])
   const [globalFilter, setGlobalFilter] = React.useState('')
 
-
+    // Using the Skipper Hook
+    const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
 
   
   const tableInstance = useReactTable({
@@ -41,14 +43,18 @@ const JewelryOrdersTable = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    autoResetPageIndex,
     state: {
       sorting: sorting,
       columnFilters: columnFilters,
       globalFilter: globalFilter,
     },
     meta: {
-      updateData: (rowIndex, columnId, value) =>
-        setData((prev) =>
+      updateData: (rowIndex, columnId, value) => {
+        // Skip page index reset until after next rerender
+        skipAutoResetPageIndex();
+
+        setData(prev =>
           prev.map((row, index) =>
             index === rowIndex
               ? {
@@ -57,7 +63,8 @@ const JewelryOrdersTable = () => {
                 }
               : row
           )
-        ),
+        );
+      },
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
